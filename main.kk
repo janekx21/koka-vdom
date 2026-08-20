@@ -1,3 +1,10 @@
+
+extern import
+  js file "html.js"
+
+extern render-node(node : node) :  ()
+  js "_render_node"
+
 struct node
   tag : string
   attribues : list<attribute>
@@ -36,9 +43,13 @@ fun p(attr, children)
   node("p", attr, children)
 
 fun main()
-  div([], [
+  val root = div([], [
     p([], [
       text("HI")
     ])
-  ]).render.println
+  ])
+
+  // root.render.println
+
+  render-node(root)
 
