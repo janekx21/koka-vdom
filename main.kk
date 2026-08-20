@@ -1,26 +1,28 @@
-struct person
-  id : string
-  name : string
-  role : role
+struct node
+  tag : string
+  children : list<node>
+  attribues : list<attribute>
+  text : string
 
-fun person/show(person : person)
-  ["id: " ++ person.id, "name: " ++ person.name, person.role.show].combine
+struct attribute
+  key : string
+  value : string
 
-fun combine( xs : list<string> ) : sep string
-  "<" ++ xs.join(sep) ++ ">"
+fun render(node : node)
+  if node.children.is-empty then
+    "<" ++ node.tag ++ "/>"
+  else
+    "<" ++ node.tag ++ ">" ++ node.children.map(render).join  ++ "</" ++ node.tag ++ ">"
 
-type role
-  Admin
-  Regular
+fun node(tag : string)
+  Node(tag, [], [], "")
 
-fun role/show(role : role)
-  match role
-    Admin -> "Admin"
-    Regular -> "Regular"
+fun text(str : string)
+  Node("text", [], [] , str)
 
-effect val sep : string
+fun with-children(node : node, children : list<node>)
+  node(children = children)
 
 fun main()
-  with val sep = " | "
-  val janek = Person("oiy82", "janek", Admin)
-  janek.show.println
+  node("div").with-children([node("p").with-children([text("hi")])]).render.println
+
