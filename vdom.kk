@@ -253,7 +253,7 @@ fun run-app( init : model, update : (m, model) -> model, view : (model) -> node<
   val current-model = ref(init)
   val current-tree  = ref(view(init))
 
-  fun dispatch( m : m ) : io ()
+  fun dispatch( m )
     current-model := update(m, !current-model)
     val next = view(!current-model)
     apply-patch(dispatch, root, 0, diff(!current-tree, next))
@@ -268,26 +268,26 @@ fun run-app( init : model, update : (m, model) -> model, view : (model) -> node<
 // ----------------------------------------------------------------------------
 
 struct model
-  count : int
+  count : list<string>
 
 type msg
   Increment
   Decrement
 
 fun init() : model
-  Model(0)
+  Model([])
 
 fun update( msg : msg, model : model ) : model
   match msg
-    Increment -> model( count = model.count + 1 )
-    Decrement -> model( count = model.count - 1 )
+    Increment -> model( count = model.count ++ ["A"] )
+    Decrement -> model( count = model.count )
 
 fun view( model : model ) : node<msg>
   Elem("div", [], [
     Text("Clicks: " ++ model.count.show),
     Elem("button", [Handler("click", Increment)], [Text("+1")]),
     Elem("button", [Handler("click", Decrement)], [Text("-1")])
-  ])
+  ] ++ model.count.map(fn (x) { Elem("div", [], [Text("X")]) }))
 
 pub fun main() : io ()
   run-app(init(), update, view, "#app")

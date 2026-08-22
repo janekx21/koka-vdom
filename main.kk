@@ -1,20 +1,45 @@
-
 extern import
   js file "html.js"
 
 extern render-node(node : node) :  ()
   js "_render_node"
 
-struct node
-  tag : string
-  attribues : list<attribute>
-  children : list<node>
-  text : string
+type node<msg>
+  Text( value : string )
+  Elem( tag : string, attrs : list<attribute<msg>>, children : list<node<msg>> )
 
-struct attribute
-  key : string
-  value : string
+type attribute<msg>
+  Prop( name : string, value : string )
+  Style( name : string, value : string )
+  Handler( name : string, to-msg : (dom-event) -> msg )
 
+type attr-op<msg>
+  Set( a : attribute<msg> )
+  Rem( a : attribute<msg> )
+
+type child-op<msg>
+  Insert( index : int, n : node<msg> )
+  Remove( index : int )
+  Move( from : int, to : int )
+  Update( index : int, p : patch<msg> )
+
+type patch<msg>
+  PNone
+  PReplace( new : node<msg> )
+  PText( value : string )
+  PUpdate( attrs : list<attr-op<msg>>, children : list<child-op<msg>> )
+
+fun changed-attrs( old : list<attribute<msg>>, new : list<attribute<msg>> ) : list<attr-op<msg>>
+  match new
+    Nil -> []
+    Cons(b,rest) ->
+      val tail = changed-attrs(old, rest)
+      match b
+        Handler(_,_) -> Cons(Set(b), tail)   // always re-set, never diffed structurally
+        _ ->
+          match find-attr(b.attr-name, old)
+            Nothing -> Cons(Set(b), tail)
+            Just(a) -> if a.attr-equal(b) then tail else Cons(Set(b), tail) 
 
 fun indent(depth : int) : string
   "  ".repeat(depth)
