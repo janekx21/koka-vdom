@@ -1,3 +1,4 @@
+module vdom
 // vdom.kk
 //
 // A small Elm-architecture virtual DOM for Koka.
@@ -88,7 +89,8 @@ extern js-prevent-default( ev : dom-event ) : io ()
 extern js-event-target( ev : dom-event ) : io dom-node
   js "kk_dom_event_target"
 
-extern js-event-value( ev : dom-event ) : io string
+// TODO make this not pub
+pub extern js-event-value( ev : dom-event ) : io string
   js "kk_dom_event_value"
 
 
@@ -96,11 +98,11 @@ extern js-event-value( ev : dom-event ) : io string
 // The virtual DOM tree, parametric in a message type `m`.
 // ----------------------------------------------------------------------------
 
-type node<m>
+pub type node<m>
   Text( value : string )
   Elem( tag : string, attrs : list<attribute<m>>, kids : list<node<m>> )
 
-type attribute<m>
+pub type attribute<m>
   Prop( name : string, value : string )
   Style( name : string, value : string )
   Handler( name : string, m : m )                        // fixed message, e.g. onClick Increment
@@ -244,12 +246,8 @@ fun apply-patch( dispatch : (m) -> io (), parent : dom-node, index : int, p : pa
           Update(i,p2) -> apply-patch(dispatch, el, i, p2)
 
 
-// ----------------------------------------------------------------------------
-// The Elm-architecture runtime. This is the only place `ref` is used --
-// app code (init/update/view) stays completely pure.
-// ----------------------------------------------------------------------------
-
-fun run-app( init : model, update : (m, model) -> model, view : (model) -> node<m>, selector : string ) : io ()
+// TEA runtime. This is the only place `ref` is used.
+pub fun run-app( init : o, update : (m, o) -> o, view : (o) -> node<m>, selector : string ) : io ()
   val root = js-create-element("div")
   js-mount-root(root, selector)
 
@@ -265,43 +263,3 @@ fun run-app( init : model, update : (m, model) -> model, view : (model) -> node<
   val mounted = mount(dispatch, !current-tree)
   js-append-child(root, mounted)
 
-
-// ----------------------------------------------------------------------------
-// Example app: a click counter, Elm-style.
-// ----------------------------------------------------------------------------
-
-type msg
-  Input( text : string )
-  AddItem
-  Reset
-
-struct model
-  text : string
-  items : list<string>
-
-fun init()
-  Model("hi", [])
-
-fun update( msg : msg, model : model ) : model
-  match msg
-    Input(t)  -> model( text = t )
-    AddItem -> model(text = "", items = model.items ++ [model.text])
-    Reset -> model(items = [])
-
-fun view( model : model ) : node<msg>
-  Elem("div", [], [
-    Elem("input", [
-      Prop("type", "text"),
-      Prop("value", model.text),
-      HandlerWith("input", fn(ev) Input(js-event-value(ev)))
-    ], []),
-    Elem("button", [Handler("click", AddItem)], [Text("Add")]),
-    Elem("button", [Handler("click", Reset)], [Text("Reset")]),
-    Text("You typed: " ++ model.text),
-    Elem("ul", [],
-      model.items.map(fn (item) { Elem("li", [], [Text(item)]) })
-    )
-  ])
-
-pub fun main() : io ()
-  run-app(init(), update, view, "#app")
