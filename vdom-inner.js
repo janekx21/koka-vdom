@@ -25,7 +25,11 @@ function kk_dom_set_attr(node, name, value) {
   if (name.indexOf("style:") === 0) {
     node.style[name.slice(6)] = value;
   } else {
-    node.setAttribute(name, value);
+    if (name === "value") {
+      node.value = value;
+    }else{
+      node.setAttribute(name, value);
+    }
   }
 }
 
@@ -44,9 +48,7 @@ function kk_dom_remove_attr(node, name) {
 
 
 function kk_dom_set_handler(node, name, callback) {
-  console.log(callback)
   node["on" + name] = callback; // callback is already a plain JS function
-  // node["on" + name] = (e) => {console.log(e)}
 }
 
 function kk_dom_remove_handler(node, name) {
@@ -90,4 +92,10 @@ function kk_dom_child_at(parent, index) {
 function kk_dom_mount_root(node, selector) {
   // var host = document.querySelector(selector);
   document.body.appendChild(node);
+}
+
+
+// vdom-dom.js (or vdom-inner.js, matching your rename)
+function kk_dom_event_value(ev) {
+  return ev.target.value;
 }

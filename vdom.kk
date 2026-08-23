@@ -88,6 +88,9 @@ extern js-prevent-default( ev : dom-event ) : io ()
 extern js-event-target( ev : dom-event ) : io dom-node
   js "kk_dom_event_target"
 
+extern js-event-value( ev : dom-event ) : io string
+  js "kk_dom_event_value"
+
 
 // ----------------------------------------------------------------------------
 // The virtual DOM tree, parametric in a message type `m`.
@@ -101,7 +104,7 @@ type attribute<m>
   Prop( name : string, value : string )
   Style( name : string, value : string )
   Handler( name : string, m : m )                        // fixed message, e.g. onClick Increment
-  HandlerWith( name : string, decode : (dom-event) -> m )  // needs event data, e.g. onInput
+  HandlerWith( name : string, decode : (dom-event) -> io m )  // needs event data, e.g. onInput
 
 type attr-op<m>
   Set( a : attribute<m> )
@@ -267,27 +270,38 @@ fun run-app( init : model, update : (m, model) -> model, view : (model) -> node<
 // Example app: a click counter, Elm-style.
 // ----------------------------------------------------------------------------
 
-struct model
-  count : list<string>
-
 type msg
-  Increment
-  Decrement
+  Input( text : string )
+  AddItem
+  Reset
 
-fun init() : model
-  Model([])
+struct model
+  text : string
+  items : list<string>
+
+fun init()
+  Model("hi", [])
 
 fun update( msg : msg, model : model ) : model
   match msg
-    Increment -> model( count = model.count ++ ["A"] )
-    Decrement -> model( count = model.count )
+    Input(t)  -> model( text = t )
+    AddItem -> model(text = "", items = model.items ++ [model.text])
+    Reset -> model(items = [])
 
 fun view( model : model ) : node<msg>
   Elem("div", [], [
-    Text("Clicks: " ++ model.count.show),
-    Elem("button", [Handler("click", Increment)], [Text("+1")]),
-    Elem("button", [Handler("click", Decrement)], [Text("-1")])
-  ] ++ model.count.map(fn (x) { Elem("div", [], [Text("X")]) }))
+    Elem("input", [
+      Prop("type", "text"),
+      Prop("value", model.text),
+      HandlerWith("input", fn(ev) Input(js-event-value(ev)))
+    ], []),
+    Elem("button", [Handler("click", AddItem)], [Text("Add")]),
+    Elem("button", [Handler("click", Reset)], [Text("Reset")]),
+    Text("You typed: " ++ model.text),
+    Elem("ul", [],
+      model.items.map(fn (item) { Elem("li", [], [Text(item)]) })
+    )
+  ])
 
 pub fun main() : io ()
   run-app(init(), update, view, "#app")
