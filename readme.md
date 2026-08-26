@@ -9,3 +9,9 @@ Serve with
 ```
 http-server <out-dir>
 ```
+
+
+Or develop using
+```
+watchexec -e kk -r "koka --target js example-effect.kk"
+```
