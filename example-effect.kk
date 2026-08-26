@@ -69,22 +69,35 @@ fun button(attr, children)
     Style("cursor", "pointer"),
   ] ++ attr, children)
   
+fun theme-button(theme : theme)
+  with theme.handle-color
+  button([Handler("click", SetTheme(theme))], [Text(theme.name)])
 
-fun view( model : model ) : node<msg>
+fun theme/name(theme : theme)
+  match theme
+    Light -> "Light"
+    Dark -> "Dark"
+    Retro -> "Retro"
+
+fun theme/handle-color(theme, action)
   with
-   val background-color = match model.theme
+   val background-color = match theme
      Light -> "white"
      Dark -> "black"
      Retro -> "oklch(88.272% 0.049 91.774)"
-   val foreground-color = match model.theme
+   val foreground-color = match theme
      Light -> "black"
      Dark -> "white"
      Retro -> "oklch(41% 0.112 45.904)"
-   val primary-color =  match model.theme
+   val primary-color =  match theme
      Light -> "oklch(45% 0.24 277.023)"
      Dark -> "oklch(58% 0.233 277.117)"
      Retro -> "oklch(80% 0.114 19.571)"
 
+  action()
+
+fun view( model : model ) : node<msg>
+  with model.theme.handle-color
    
   vbox([Style("max-width", "15rem")],
     [
@@ -100,9 +113,9 @@ fun view( model : model ) : node<msg>
       ]),
       button([], [Text("Login")]),
       hbox([], [
-        button([Handler("click", SetTheme(Light))], [Text("Light")]),
-        button([Handler("click", SetTheme(Dark))], [Text("Dark")]),
-        button([Handler("click", SetTheme(Retro))], [Text("Retro")]),
+        theme-button(Light),
+        theme-button(Dark),
+        theme-button(Retro),
       ]),
     ])
 
