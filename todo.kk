@@ -13,7 +13,7 @@ struct model
   items : list<string>
 
 fun init()
-  Model("hi", [])
+  Model("Bread", ["Milk"])
 
 fun update( msg : msg, model : model ) : model
   match msg
