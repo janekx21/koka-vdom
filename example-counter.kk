@@ -1,7 +1,3 @@
-The Elm Architecture (TEA) in koka with a virtual dom in koka.
-
-Here is the good old counter example.
-```kk
 import vdom
 
 pub fun main() : io ()
@@ -27,22 +23,4 @@ fun view( model : model ) : node<msg>
     Text(model.show),
     Elem("button", [Handler("click", Increase)], [Text("+")])
   ])
-```
-
-Build example with
-```
-koka --target js example-todo.kk
-```
-
-Or develop using
-```
-watchexec -e kk -r "koka --target js example-effect.kk"
-```
-
-Serve with
-```
-http-server <out-dir>
-```
-
-
 
