@@ -90,7 +90,7 @@ extern js-event-target( ev : dom-event ) : io dom-node
   js "kk_dom_event_target"
 
 // TODO make this not pub
-pub extern js-event-value( ev : dom-event ) : io string
+pub extern js-event-value( ev : dom-event ) : string
   js "kk_dom_event_value"
 
 
@@ -102,11 +102,28 @@ pub type node<m>
   Text( value : string )
   Elem( tag : string, attrs : list<attribute<m>>, kids : list<node<m>> )
 
+pub fun string/node(txt : string) : node<m>
+  Text(txt)
+
+fun node/map(node : node<a>, f :  a -> b) : div node<b>
+  match node
+    Text(t) -> Text(t)
+    Elem(tag, attr, children) -> Elem(tag, attr.map(fn (a) a.map(f)), children.map(fn (n) n.map(f)))
+  
+
 pub type attribute<m>
   Prop( name : string, value : string )
   Style( name : string, value : string )
   Handler( name : string, m : m )                        // fixed message, e.g. onClick Increment
   HandlerWith( name : string, decode : (dom-event) -> io m )  // needs event data, e.g. onInput
+
+pub fun attribute/map(attr : attribute<a>, f : a -> b) : attribute<b>
+  match attr
+    Prop(name, value) -> Prop(name, value)
+    Style(name, value) -> Style(name, value)
+    Handler( name, m ) -> Handler(name, f(m))
+    HandlerWith( name, decode ) -> HandlerWith(name, fn(e) f(decode(e)))
+
 
 type attr-op<m>
   Set( a : attribute<m> )
