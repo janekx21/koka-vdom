@@ -89,7 +89,6 @@ extern js-prevent-default( ev : dom-event ) : io ()
 extern js-event-target( ev : dom-event ) : io dom-node
   js "kk_dom_event_target"
 
-// TODO make this not pub
 pub extern js-event-value( ev : dom-event ) : string
   js "kk_dom_event_value"
 
@@ -224,8 +223,8 @@ fun diff( old : node<m>, new : node<m> ) : div patch<m>
 // -- this is what lets `view` stay a pure `(model) -> node<m>` function.
 // ----------------------------------------------------------------------------
 
-fun mount( dispatch : (m) -> io (), n : node<m> ) : io dom-node
-  match n
+fun mount( dispatch : (m, o, node<m>) -> io (), node : node<m>,  model : o, tree : node<m>) : io dom-node
+  match node
     Text(v) -> js-create-text(v)
     Elem(tag, attrs, kids) ->
       val el = js-create-element(tag)
@@ -233,15 +232,17 @@ fun mount( dispatch : (m) -> io (), n : node<m> ) : io dom-node
         match a
           Prop(name,value)         -> js-set-attr(el, name, value)
           Style(name,value)        -> js-set-attr(el, "style:" ++ name, value)
-          Handler(name,m)        -> js-set-handler(el, name, fn(_ev) dispatch(m))
-          HandlerWith(name,decode) -> js-set-handler(el, name, fn(ev) dispatch(decode(ev)))
-      kids.foreach fn(c) js-append-child(el, mount(dispatch, c))
+          Handler(name,msg)        -> js-set-handler(el, name, make-handler(dispatch, msg, model, tree))
+          HandlerWith(name,decode) -> js-set-handler(el, name, make-handler-ev(dispatch, model, tree, decode))
+      kids.foreach fn(c) js-append-child(el, mount(dispatch, c, model, tree))
       el
 
-fun apply-patch( dispatch : (m) -> io (), parent : dom-node, index : int, p : patch<m> ) : io ()
+
+
+fun apply-patch( dispatch : (m, o, node<m>) -> io (), parent : dom-node, index : int, p : patch<m>, model : o, tree : node<m> ) : io ()
   match p
     PNone       -> ()
-    PReplace(n) -> js-replace-child(parent, index, mount(dispatch, n))
+    PReplace(n) -> js-replace-child(parent, index, mount(dispatch, n, model, tree))
     PText(v)    -> js-set-text(js-child-at(parent, index), v)
     PUpdate(attr-ops, child-ops) ->
       val el = js-child-at(parent, index)
@@ -249,18 +250,28 @@ fun apply-patch( dispatch : (m) -> io (), parent : dom-node, index : int, p : pa
         match op
           Set(Prop(name,value))         -> js-set-attr(el, name, value)
           Set(Style(name,value))        -> js-set-attr(el, "style:" ++ name, value)
-          Set(Handler(name,m))        -> js-set-handler(el, name, fn(_ev) dispatch(m))
-          Set(HandlerWith(name,decode)) -> js-set-handler(el, name, fn(ev) dispatch(decode(ev)))
+          Set(Handler(name,m))        -> js-set-handler(el, name, make-handler(dispatch, m, model, tree)) // <-- problem
+          Set(HandlerWith(name,decode)) -> js-set-handler(el, name, make-handler-ev(dispatch, model, tree, decode))
+
           Rem(Prop(name,_))             -> js-remove-attr(el, name)
           Rem(Style(name,_))            -> js-remove-attr(el, "style:" ++ name)
           Rem(Handler(name,_))          -> js-remove-handler(el, name)
           Rem(HandlerWith(name,_))      -> js-remove-handler(el, name)
       child-ops.foreach fn(op)
         match op
-          Insert(_,n)  -> js-append-child(el, mount(dispatch, n))
+          Insert(_,n)  -> js-append-child(el, mount(dispatch, n, model, tree))
           Remove(i)    -> js-remove-child(el, i)
           Move(_,_)    -> ()
-          Update(i,p2) -> apply-patch(dispatch, el, i, p2)
+          Update(i,p2) -> apply-patch(dispatch, el, i, p2, model, tree)
+
+
+// This is a bit weird but it works
+
+noinline fun make-handler( dispatch : (m,o,node<m>) -> io (), msg : m, model : o, tree : node<m> ) : io ((dom-event) -> io ())
+  fn(_ev) dispatch(msg, model, tree)
+
+noinline fun make-handler-ev( dispatch : (m,o,node<m>) -> io (), model : o, tree : node<m>, decode : (dom-event) -> io m ) : io ((dom-event) -> io ())
+  fn(ev) dispatch(decode(ev), model, tree)
 
 
 // TEA runtime. This is the only place `ref` is used.
@@ -268,15 +279,15 @@ pub fun run-app( init : o, update : (m, o) -> o, view : (o) -> node<m>, selector
   val root = js-create-element("div")
   js-mount-root(root, selector)
 
-  val current-model = ref(init)
-  val current-tree  = ref(view(init))
+  fun dispatch( msg, current-model, current-tree )
+    // trace-any("dispatch m", msg)
+    // trace-any("dispatch current-model", current-model)
+    // trace-any("dispatch current-tree", current-tree)
+    val next-model = update(msg, current-model)
+    val next-tree = view(next-model)
+    apply-patch(dispatch, root, 0, diff(current-tree, next-tree), next-model, next-tree)
 
-  fun dispatch( m )
-    current-model := update(m, !current-model)
-    val next = view(!current-model)
-    apply-patch(dispatch, root, 0, diff(!current-tree, next))
-    current-tree := next
-
-  val mounted = mount(dispatch, !current-tree)
+  val tree = view(init)
+  val mounted = mount(dispatch, tree, init, tree)
   js-append-child(root, mounted)
 
