@@ -99,3 +99,8 @@ function kk_dom_mount_root(node, selector) {
 function kk_dom_event_value(ev) {
   return ev.target.value;
 }
+
+// vdom-dom.js (or vdom-inner.js, matching your rename)
+function kk_time() {
+  return window.performance.now();
+}
