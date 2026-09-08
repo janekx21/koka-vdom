@@ -30,7 +30,6 @@ fun update( msg : msg, model : model ) : model
     SetPassword(t)  -> model( password = t )
 
 fun vbox(attr, children)
-  with yield-self // This yields the following node
   Elem("div", [
     Style("display", "flex")
     , Style("flex-direction", "column")
@@ -40,7 +39,6 @@ fun vbox(attr, children)
     ] ++ attr, children)
 
 fun hbox(attr, children)
-  with yield-self
   Elem("div", [
     Style("display", "flex")
     , Style("flex-direction", "row")
@@ -56,7 +54,8 @@ fun line-input(attr)
     Style("border", "2px solid black"),
     Style("border-radius", "16px"),
     // Style("color", foreground-color),
-    Style("padding", "4px 8px")
+    Style("padding", "4px 8px"),
+    Style("min-width", "0"),
   ] ++ attr, [])
 
 fun button(attr, children)
@@ -78,19 +77,26 @@ fun view( model : model ) : node<msg>
  
   vbox([Style("max-width", "15rem")],
     [
-      line-input([
-        Prop("type", "text"),
-        Prop("value", model.username),
-        HandlerWith("input", fn(ev) SetUsername(js-event-value(ev)))
+      vbox([Style("border", "2px solid black")],[
+        "Login Screen".node,
+        line-input([
+          Prop("type", "text"),
+          Prop("value", model.username),
+          HandlerWith("input", fn(ev) SetUsername(js-event-value(ev)))
+        ]),
+        line-input([
+          Prop("type", "password"),
+          Prop("value", model.password),
+          HandlerWith("input", fn(ev) SetPassword(js-event-value(ev)))
+        ]),
+        hbox([], [
+          line-input([Prop("placeholder", "Street"), Prop("disabled", "true")]),
+          line-input([Prop("placeholder", "Num"), Prop("disabled", "true")]),
+          button([Prop("disabled", "true")], [Text("X")]),
+        ]),
+        button([], [Text("Login")]),
       ]),
-      line-input([
-        Prop("type", "password"),
-        Prop("value", model.password),
-        HandlerWith("input", fn(ev) SetPassword(js-event-value(ev)))
-      ]),
-      button([], [Text("Login")]),
-
-      Text("yielded " ++ nodes.length.show ++ " nodes:"),
+      Text("yielded " ++ nodes.length.show ++ " nodes that are buttons and inputs:"),
       vbox([Style("border", "2px solid black")],nodes),
     ])
 
