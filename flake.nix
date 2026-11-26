@@ -19,7 +19,7 @@
       in
       {
         devShells.default = pkgs.mkShell {
-          name = "koka-raylib";
+          name = "koka-vdom";
 
           buildInputs = with pkgs; [
             koka
@@ -29,6 +29,8 @@
             http-server
             watchexec
           ];
+
+          # shellHook = "";
         };
       }
     );
