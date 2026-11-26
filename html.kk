@@ -4,6 +4,9 @@ import vdom
 
 // Lets mirror https://package.elm-lang.org/packages/elm/html/latest/Html#map
 
+pub fun text(content : string)
+  Text(content)
+
 // Tags
 
 // Headers

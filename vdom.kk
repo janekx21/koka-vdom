@@ -306,3 +306,49 @@ pub fun run-app( init : o, update : (m, o) -> o, view : (o) -> node<m>, selector
   val mounted = mount(dispatch, view(init))
   js-append-child(root, mounted)
 
+
+pub type cmd<m>
+  HttpRequest(method : string, url : string, body : string, msg : (string) -> m )
+  None
+
+fun run-cmd(cmd, dispatch)
+  trace-any("run-cmd ", cmd)
+  match cmd
+    HttpRequest("GET", "http://example.com", "", x) -> dispatch(x("hello world!"))
+    None -> {}
+    _ -> {}
+
+pub fun run-app-cmd( init : (o, cmd<m>), update : (m, o) -> (o, cmd<m>), view : (o) -> node<m>, selector : string ) : io ()
+  val root = js-create-element("div")
+  js-mount-root(root, selector)
+
+  val (init-model, init-cmd) = init()
+  val model = ref(init-model)
+  val tree = ref(view(init-model))
+
+
+  fun dispatch( msg )
+
+    // trace-any("dispatch m", msg)
+    val start = js-time()
+    // trace-any("dispatch current-model", current-model)
+    // trace-any("dispatch current-tree", current-tree)
+    // trace-any("model", !model)
+    // trace-any("tree", !tree)
+    val (next-model, next-cmd) = update(msg, !model)
+    val next-tree = view(next-model)
+    apply-patch(dispatch, root, 0, diff(!tree, next-tree))
+    model := next-model
+    tree := next-tree
+    val end = js-time()
+    trace-any("timing", end - start)
+    run-cmd(next-cmd, dispatch)
+
+
+  
+
+  val mounted = mount(dispatch, view(init-model))
+  js-append-child(root, mounted)
+  run-cmd(init-cmd, dispatch)
+
+
