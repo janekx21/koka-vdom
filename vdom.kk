@@ -95,6 +95,9 @@ pub extern js-event-value( ev : dom-event ) : string
 pub extern js-time() : int
   js "kk_time"
 
+pub extern js-fetch<m>(method : string, url : string, body : string, msg : (string) -> io m) : io ()
+  js "kk_fetch"
+
 
 // ----------------------------------------------------------------------------
 // The virtual DOM tree, parametric in a message type `m`.
@@ -314,9 +317,9 @@ pub type cmd<m>
 fun run-cmd(cmd, dispatch)
   trace-any("run-cmd ", cmd)
   match cmd
-    HttpRequest("GET", "http://example.com", "", x) -> dispatch(x("hello world!"))
+    // HttpRequest("GET", "http://example.com", "", x) -> dispatch(x("hello world!"))
+    HttpRequest(method, url, body, msg) -> js-fetch(method, url ,body, fn(res) dispatch(msg(res)))
     None -> {}
-    _ -> {}
 
 pub fun run-app-cmd( init : (o, cmd<m>), update : (m, o) -> (o, cmd<m>), view : (o) -> node<m>, selector : string ) : io ()
   val root = js-create-element("div")
@@ -328,24 +331,12 @@ pub fun run-app-cmd( init : (o, cmd<m>), update : (m, o) -> (o, cmd<m>), view : 
 
 
   fun dispatch( msg )
-
-    // trace-any("dispatch m", msg)
-    val start = js-time()
-    // trace-any("dispatch current-model", current-model)
-    // trace-any("dispatch current-tree", current-tree)
-    // trace-any("model", !model)
-    // trace-any("tree", !tree)
     val (next-model, next-cmd) = update(msg, !model)
     val next-tree = view(next-model)
     apply-patch(dispatch, root, 0, diff(!tree, next-tree))
     model := next-model
     tree := next-tree
-    val end = js-time()
-    trace-any("timing", end - start)
     run-cmd(next-cmd, dispatch)
-
-
-  
 
   val mounted = mount(dispatch, view(init-model))
   js-append-child(root, mounted)

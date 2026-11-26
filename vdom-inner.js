@@ -104,3 +104,19 @@ function kk_dom_event_value(ev) {
 function kk_time() {
   return window.performance.now();
 }
+ 
+// vdom-dom.js (or vdom-inner.js, matching your rename)
+function kk_fetch(method, url, body, msg) {
+  console.log("fetch", method, url, body, msg)
+  if(method == "GET" || method == "HEAD") {
+    fetch(url, {method})
+      .then((resp) => resp.text())
+      .then((text) => {
+        console.log("fetch response text", text)
+        msg(text)
+      }
+    )
+  } else {
+    fetch(url, {body, method}).then((result) => msg("hi from fetch"))
+  }
+}

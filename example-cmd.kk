@@ -28,7 +28,7 @@ fun init() : (model, cmd<msg>)
 
 fun update( msg : msg, model : model ) : (model, cmd<msg>)
   match msg
-    GetData -> (Loading, HttpRequest("GET", "http://example.com", "", fn(x) GotData(x)))
+    GetData -> (Loading, HttpRequest("GET", "/html.mjs", "", fn(x) GotData(x.list.take(50).string)))
     GotData(data) -> (Succ(data), None)
 
 fun view( model : model ) : node<msg>
